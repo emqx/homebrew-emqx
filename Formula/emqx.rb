@@ -1,7 +1,7 @@
 class Emqx < Formula
   homepage "https://emqx.io"
   url "https://repos.emqx.io/emqx-ce/homebrew/emqx-homebrew-v3.2.7.zip"
-  sha256 "ec31d1d8bae2b0764de66d688b3485bd8b92fd0b2ec1ec1d713aba41dfa6f623  emqx-homebrew-v3.2.7.zip"
+  sha256 "4171c8581e459a126e9c1931dbc1ff10f84c422b73411eaafb2619ec1b0314ec  emqx-homebrew-v3.2.7.zip"
   version "3.2.7"
 
   depends_on "openssl"
