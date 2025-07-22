@@ -1,51 +1,92 @@
+require "securerandom"
+
 class Emqx < Formula
-  homepage "https://emqx.io"
-  url "https://repos.emqx.io/emqx-ce/homebrew/emqx-homebrew-4.3.5.zip"
-  sha256 "019e1a2a704caa6a878c46d4e3a1a5241f1cbd34d236f78de8db5a9f0460e480"
-  version "4.3.5"
+  desc "MQTT broker for AI, IoT, IIoT and IoV"
+  homepage "https://www.emqx.com/en/products/emqx"
+  version "5.10.0"
+  license "BUSL-1.1"
 
-  depends_on "openssl"
-
-  def install
-    prefix.install Dir["*"]
-    bin.install Dir[libexec/"/bin/emqx"]
-    rm %W[#{bin}/emqx.cmd #{bin}/emqx_ctl.cmd]
+  if OS.mac?
+    case [MacOS.version, Hardware::CPU.arch]
+    when [13, :x86_64]
+      # For macOS 13 (Ventura) on Intel
+      url "https://github.com/emqx/emqx/releases/download/e#{version}/emqx-enterprise-#{version}-macos13-amd64.zip"
+      sha256 "9ff3fdfab88ca228b4ba1cfdba786b4186e993ba7e57b52f637f582694299f11"
+    when [14, :arm64]
+      # For macOS 14 (Sonoma) on Apple Silicon
+      url "https://github.com/emqx/emqx/releases/download/e#{version}/emqx-enterprise-#{version}-macos14-arm64.zip"
+      sha256 "7bb5c543104903d966e9138b75e2c1c94e68fb4301ac69a3148dd574cb68d16a"
+    when [15, :arm64]
+      # For macOS 15 (Sequoia) on Apple Silicon
+      url "https://github.com/emqx/emqx/releases/download/e#{version}/emqx-enterprise-#{version}-macos15-arm64.zip"
+      sha256 "2d55d8cbe8e713c277fa26d7a7b7c56766a25217950eade06db0ae4aabc7a447"
+    else
+      # Raise an error for unsupported combinations
+      odie "EMQX is not supported on macOS #{MacOS.version} and #{Hardware::CPU.arch} architecture."
+    end
+  else
+    odie "EMQX is only available on macOS for this formula."
   end
 
-  plist_options :manual => "emqx"
+  depends_on "openssl@3"
 
-  def plist; <<-EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN"
-    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>Program</key>
-        <string>#{opt_bin}/emqx</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>EnvironmentVariables</key>
-        <dict>
-          <!-- need erl in the path -->
-          <key>PATH</key>
-          <string>#{HOMEBREW_PREFIX}/sbin:/usr/bin:/bin:#{HOMEBREW_PREFIX}/bin</string>
-          <key>CONF_ENV_FILE</key>
-          <string>#{etc}/emqx.conf<string>
-        </dict>
-      </dict>
-    </plist>
+  def install
+    cookie = SecureRandom.hex(40)
+    vars_file = buildpath/"releases/emqx_vars"
+    vars_file.append_lines <<~EOS
+      EMQX_LOG_DIR=#{var}/log/emqx
+      EMQX_ETC_DIR=#{pkgetc}
+    EOS
+
+    emqx_conf_file = buildpath/"etc/emqx.conf"
+    emqx_conf_file.append_lines <<~EOS
+      node {
+        data_dir = "#{var}/lib/emqx"
+        cookie = "#{cookie}"
+      }
+    EOS
+
+    prefix.install Dir["*"]
+    pkgetc.install prefix/"etc/emqx.conf" unless (pkgetc/"emqx.conf").exist?
+    pkgetc.install prefix/"etc/base.hocon" unless (pkgetc/"base.hocon").exist?
+    pkgetc.install prefix/"etc/acl.conf" unless (pkgetc/"acl.conf").exist?
+    pkgetc.install prefix/"etc/vm.args" unless (pkgetc/"vm.args").exist?
+    pkgetc.install prefix/"etc/certs" unless (pkgetc/"certs").exist?
+
+    %w[emqx.cmd emqx_ctl.cmd no_dot_erlang.boot].each do |f|
+      rm bin/f
+    end
+    chmod "+x", prefix/"releases/#{version}/no_dot_erlang.boot"
+    bin.install_symlink prefix/"releases/#{version}/no_dot_erlang.boot"
+    (var/"lib/emqx").mkpath
+    (var/"log/emqx").mkpath
+  end
+
+  def caveats
+    <<~EOS
+      EMQX Dashboard: http://localhost:18083
     EOS
   end
 
+  service do
+    run [opt_bin/"emqx", "foreground"]
+  end
+
   def post_install
-    system "mkdir", "-p", "#{prefix}/data/configs"
+    # Find all executables and dynamic libraries in the installation prefix.
+    # This includes your main executables in `bin` and all `.so`/`.dylib` files.
+    mach_files = `find #{prefix} -type f -exec file {} + | grep "Mach-O"`.lines.map { |l| l.split(":").first }
+
+    # Re-sign each of them with a simple ad-hoc signature.
+    mach_files.each do |file|
+      system "codesign", "--force", "--deep", "--sign", "-", file
+    end
   end
 
   test do
-    system emqx, "start"
-    system emqx_ctl, "status"
-    system emqx, "stop"
+    exec "ln", "-s", testpath, "data"
+    exec bin/"emqx", "start"
+    system bin/"emqx", "ctl", "status"
+    system bin/"emqx", "stop"
   end
 end
