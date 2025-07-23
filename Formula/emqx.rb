@@ -85,7 +85,7 @@ class Emqx < Formula
   test do
     exec "ln", "-s", testpath, "data"
     exec bin/"emqx", "start"
-    system bin/"emqx", "ctl", "status"
+    system bin/"emqx", "ctl", "broker"
     system bin/"emqx", "stop"
   end
 end
