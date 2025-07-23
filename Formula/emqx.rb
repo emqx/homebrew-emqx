@@ -7,25 +7,30 @@ class Emqx < Formula
   license "BUSL-1.1"
 
   if OS.mac?
-    case [MacOS.version, Hardware::CPU.arch]
-    when [13, :x86_64]
-      # For macOS 13 (Ventura) on Intel
-      url "https://github.com/emqx/emqx/releases/download/e#{version}/emqx-enterprise-#{version}-macos13-amd64.zip"
-      sha256 "9ff3fdfab88ca228b4ba1cfdba786b4186e993ba7e57b52f637f582694299f11"
-    when [14, :arm64]
-      # For macOS 14 (Sonoma) on Apple Silicon
-      url "https://github.com/emqx/emqx/releases/download/e#{version}/emqx-enterprise-#{version}-macos14-arm64.zip"
-      sha256 "7bb5c543104903d966e9138b75e2c1c94e68fb4301ac69a3148dd574cb68d16a"
-    when [15, :arm64]
-      # For macOS 15 (Sequoia) on Apple Silicon
-      url "https://github.com/emqx/emqx/releases/download/e#{version}/emqx-enterprise-#{version}-macos15-arm64.zip"
-      sha256 "2d55d8cbe8e713c277fa26d7a7b7c56766a25217950eade06db0ae4aabc7a447"
+    os_version_tag = ""
+    sha = ""
+
+    if Hardware::CPU.arch == :arm64 && MacOS.version >= 15
+      os_version_tag = "macos15"
+      sha = "2d55d8cbe8e713c277fa26d7a7b7c56766a25217950eade06db0ae4aabc7a447"
+    elsif Hardware::CPU.arch == :arm64 && MacOS.version == 14
+      os_version_tag = "macos14"
+      sha = "7bb5c543104903d966e9138b75e2c1c94e68fb4301ac69a3148dd574cb68d16a"
+    elsif Hardware::CPU.arch == :x86_64 && MacOS.version == 13
+      os_version_tag = "macos13"
+      sha = "9ff3fdfab88ca228b4ba1cfdba786b4186e993ba7e57b52f637f582694299f11"
     else
-      # Raise an error for unsupported combinations
-      odie "EMQX is not supported on macOS #{MacOS.version} and #{Hardware::CPU.arch} architecture."
+      odie <<~EOS
+        EMQX is not supported on macOS #{MacOS.version} with the
+        #{Hardware::CPU.arch} architecture using this formula.
+      EOS
     end
+
+    arch_tag = (Hardware::CPU.arch == :x86_64) ? "amd64" : "arm64"
+    url "https://github.com/emqx/emqx/releases/download/e#{version}/emqx-enterprise-#{version}-#{os_version_tag}-#{arch_tag}.zip"
+    sha256 sha
   else
-    odie "EMQX is only available on macOS for this formula."
+    odie "This EMQX formula is only available for macOS."
   end
 
   depends_on "openssl@3"
@@ -61,12 +66,6 @@ class Emqx < Formula
     (var/"log/emqx").mkpath
   end
 
-  def caveats
-    <<~EOS
-      EMQX Dashboard: http://localhost:18083
-    EOS
-  end
-
   service do
     run [opt_bin/"emqx", "foreground"]
   end
@@ -80,6 +79,12 @@ class Emqx < Formula
     mach_files.each do |file|
       system "codesign", "--force", "--deep", "--sign", "-", file
     end
+  end
+
+  def caveats
+    <<~EOS
+      EMQX Dashboard: http://localhost:18083
+    EOS
   end
 
   test do
