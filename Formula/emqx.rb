@@ -47,11 +47,10 @@ class Emqx < Formula
     EOS
 
     prefix.install Dir["*"]
-    pkgetc.install prefix/"etc/emqx.conf" unless (pkgetc/"emqx.conf").exist?
-    pkgetc.install prefix/"etc/base.hocon" unless (pkgetc/"base.hocon").exist?
-    pkgetc.install prefix/"etc/acl.conf" unless (pkgetc/"acl.conf").exist?
-    pkgetc.install prefix/"etc/vm.args" unless (pkgetc/"vm.args").exist?
-    pkgetc.install prefix/"etc/certs" unless (pkgetc/"certs").exist?
+    etc_exclude = %w[examples lwm2m_xml]
+    (prefix/"etc").children.reject { |file| etc_exclude.include?(file.basename.to_s) }.each do |file|
+      pkgetc.install file unless (pkgetc/file.basename).exist?
+    end
 
     %w[emqx.cmd emqx_ctl.cmd no_dot_erlang.boot].each do |f|
       rm bin/f
