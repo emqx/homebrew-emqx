@@ -1,6 +1,5 @@
-# homebrew-emq
+# EMQX Homebrew Tap
 
 ```
-brew tap emqx/emqx
-brew install emqx
+brew install emqx/emqx/emqx
 ```
