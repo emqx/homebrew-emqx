@@ -53,11 +53,6 @@ class EmqxAT6 < Formula
       pkgetc.install file unless (pkgetc/file.basename).exist?
     end
 
-    %w[emqx.cmd emqx_ctl.cmd no_dot_erlang.boot].each do |f|
-      rm bin/f
-    end
-    chmod "+x", prefix/"releases/#{version}/no_dot_erlang.boot"
-    bin.install_symlink prefix/"releases/#{version}/no_dot_erlang.boot"
     (var/"lib/emqx").mkpath
     (var/"log/emqx").mkpath
   end
