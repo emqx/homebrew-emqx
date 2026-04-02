@@ -3,7 +3,7 @@ require "securerandom"
 class EmqxAT6 < Formula
   desc "MQTT broker for AI, IoT, IIoT and IoV"
   homepage "https://www.emqx.com/en/products/emqx"
-  version "6.1.1"
+  version "6.2.0"
   license "BUSL-1.1"
 
   if OS.mac?
@@ -12,10 +12,10 @@ class EmqxAT6 < Formula
 
     if Hardware::CPU.arch == :arm64 && MacOS.version >= 15
       os_version_tag = "macos15"
-      sha = "e8e66fecf286daf3f4afcb943d00b28130101ce593e178db408768b089532edb"
+      sha = "9bfc02f3e0f9cce15b536fca1636ecb182539f79fc0010c81dbab9c2e8a4aa4d"
     elsif Hardware::CPU.arch == :arm64 && MacOS.version == 14
       os_version_tag = "macos14"
-      sha = "0423447dcdd22298d2045bc346501a21ce545d60f721bd7dbd2aa0d02835c8a1"
+      sha = "06043fdad39576ad4d53481b6439d94240db189602cb973db1ae3b8f7738fdb3"
     else
       odie <<~EOS
         EMQX #{version} is only supported on macOS 14 (Sonoma) or later
