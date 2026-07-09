@@ -3,7 +3,7 @@ require "securerandom"
 class Emqx < Formula
   desc "MQTT broker for AI, IoT, IIoT and IoV"
   homepage "https://www.emqx.com/en/products/emqx"
-  version "5.10.0"
+  version "5.10.4"
   license "BUSL-1.1"
 
   if OS.mac?
@@ -12,22 +12,18 @@ class Emqx < Formula
 
     if Hardware::CPU.arch == :arm64 && MacOS.version >= 15
       os_version_tag = "macos15"
-      sha = "2d55d8cbe8e713c277fa26d7a7b7c56766a25217950eade06db0ae4aabc7a447"
+      sha = "91c23be86e21e1750aca175b2fa1072c3990fbe119dc318449899f7be65daee9"
     elsif Hardware::CPU.arch == :arm64 && MacOS.version == 14
       os_version_tag = "macos14"
-      sha = "7bb5c543104903d966e9138b75e2c1c94e68fb4301ac69a3148dd574cb68d16a"
-    elsif Hardware::CPU.arch == :x86_64 && MacOS.version == 13
-      os_version_tag = "macos13"
-      sha = "9ff3fdfab88ca228b4ba1cfdba786b4186e993ba7e57b52f637f582694299f11"
+      sha = "354bc12cfd9bae218cc9706b4f9f24ebd5fdc9ecb3d0a5087a7ea465047e23f9"
     else
       odie <<~EOS
-        EMQX is not supported on macOS #{MacOS.version} with the
-        #{Hardware::CPU.arch} architecture using this formula.
+        EMQX #{version} is only supported on macOS 14 (Sonoma) or later
+        with the arm64 (Apple Silicon) architecture using this formula.
       EOS
     end
 
-    arch_tag = (Hardware::CPU.arch == :x86_64) ? "amd64" : "arm64"
-    url "https://github.com/emqx/emqx/releases/download/e#{version}/emqx-enterprise-#{version}-#{os_version_tag}-#{arch_tag}.zip"
+    url "https://github.com/emqx/emqx/releases/download/e#{version}/emqx-enterprise-#{version}-#{os_version_tag}-arm64.zip"
     sha256 sha
   else
     odie "This EMQX formula is only available for macOS."
